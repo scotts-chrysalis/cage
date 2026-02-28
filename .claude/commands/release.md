@@ -1,62 +1,71 @@
 ---
-allowed-tools: Bash(git *), Bash(gh *), Bash(curl *), Bash(shasum *), Bash(date *), Bash(rm *), Read, Edit, Write
+allowed-tools: Bash(git *), Bash(gh *), Bash(curl *), Bash(shasum *), Bash(date *), Bash(rm *), Read, Edit, Write, AskUserQuestion
 ---
 
 # Release cage
 
-Perform a full release of the cage project: stamp CHANGES.md, tag and push, create a GitHub release, and update the homebrew-tap formula.
+Perform a full release of the cage project: generate release notes from commits, update CHANGES.md, tag and push, create a GitHub release, and update the homebrew-tap formula.
 
 The cage repo is at the current working directory. The homebrew-tap is at `../homebrew-tap` relative to the cage repo root.
 
+**Important:** Do not use `$()` subshell substitution — it triggers extra permission prompts. Always run the inner command first, read its output, then use the literal value in the next call.
+
 ---
 
-## Step 1: Gather current state (run in parallel)
+## Step 1: Gather current state
 
-- `git describe --tags --abbrev=0` — last version tag
+Run in parallel:
 - `git status --porcelain` — uncommitted changes in cage repo
 - `git -C ../homebrew-tap status --porcelain` — uncommitted changes in tap
-- `date +%Y-%m-%d` — today's date
-- Read `CHANGES.md`
+- `git describe --tags --abbrev=0` — last version tag
 
-## Step 2: Verify clean working trees
+If either working tree has uncommitted changes, stop and tell the user to commit or stash first.
 
-If either `git status` shows output, stop and tell the user to commit or stash those changes first.
+## Step 2: Collect commits since last tag
 
-## Step 3: Show recent commits and propose a version
-
-Run `git log <LAST_TAG>..HEAD --oneline`.
-
-Analyze the commit messages:
-- If any line starts with `feat:` or `feat(` → suggest a **minor** bump
-- Otherwise → suggest a **patch** bump
-
-Compute the suggested version by splitting the last tag on `.` and incrementing the appropriate component. Strip any leading `v` before splitting.
-
-Present the commits and your suggested version, then ask the user to confirm or enter a different version. Wait for their response before continuing.
-
-## Step 4: Verify CHANGES.md has release notes
-
-Re-read `CHANGES.md` if needed. There must be an `## Unreleased` section with at least one non-blank line of content beneath it.
-
-If the section is missing or empty, stop and explain the required format:
-
+Using the tag value from Step 1, run:
 ```
-## Unreleased
-
-- feat: description of change
-- fix: description of bug fix
+git log <LAST_TAG>..HEAD --oneline
 ```
 
-Do not proceed until the user has added notes and asked you to continue.
+Summarize each user-facing change as a bullet point. Omit internal-only changes (CI tweaks, refactors with no behavior change, chore commits) unless significant. Use the conventional commit type to guide this — `feat:` and `fix:` are user-facing; `chore:`, `docs:`, `refactor:` usually are not.
 
-## Step 5: Stamp the version in CHANGES.md
+## Step 3: Suggest version bump and confirm with user
 
-Use the Edit tool to replace `## Unreleased` with `## v{VERSION} ({TODAY})` in `CHANGES.md`.
+Based on the changes, suggest a semver increment:
+- **patch** — bug fixes, minor tweaks
+- **minor** — new features or non-breaking additions
+- **major** — breaking changes requiring user action
+
+Use `AskUserQuestion` to present the draft changelog and confirm the version. Include the suggested bump (marked recommended) and the other two options.
+
+Wait for the user's response before continuing.
+
+## Step 4: Review and approve changelog
+
+Get today's date:
+```
+date +%Y-%m-%d
+```
+
+Show the user the new CHANGES.md section that will be inserted:
+
+```
+## v{VERSION} ({TODAY})
+
+- bullet one
+- bullet two
+```
+
+Use `AskUserQuestion` with options **Looks good** and **Edit** (with "Other" for feedback). If the user wants edits, apply them and show the updated text again. Repeat until approved.
+
+## Step 5: Update CHANGES.md
+
+Read `CHANGES.md`. Insert the new version section immediately after the `# Changelog` heading line, with a blank line before the first existing `## ` section. Use the Edit tool.
 
 ## Step 6: Commit, tag, and push
 
 Run each command separately and in order:
-
 ```
 git add CHANGES.md
 git commit -m "chore: release v{VERSION}"
@@ -67,27 +76,25 @@ git push origin v{VERSION}
 
 ## Step 7: Create GitHub release
 
-Read `CHANGES.md`. Extract all lines between the `## v{VERSION}` heading and the next `## v` heading — these are the release notes for this version.
-
-Write the extracted lines to `/tmp/cage-release-notes.md` using the Write tool.
+Write the release notes bullet points to `.release-notes.md` in the project root using the Write tool.
 
 Then run:
 ```
-gh release create v{VERSION} --repo sschlesier/cage --title v{VERSION} --notes-file /tmp/cage-release-notes.md
+gh release create v{VERSION} --repo sschlesier/cage --title v{VERSION} --notes-file .release-notes.md
 ```
 
 Then remove the temp file:
 ```
-rm /tmp/cage-release-notes.md
+rm .release-notes.md
 ```
 
 ## Step 8: Compute sha256 of the release tarball
 
 Run these in order:
 ```
-curl -fsSL -o /tmp/cage-release.tar.gz https://github.com/sschlesier/cage/archive/refs/tags/v{VERSION}.tar.gz
-shasum -a 256 /tmp/cage-release.tar.gz
-rm /tmp/cage-release.tar.gz
+curl -fsSL -o .release.tar.gz https://github.com/sschlesier/cage/archive/refs/tags/v{VERSION}.tar.gz
+shasum -a 256 .release.tar.gz
+rm .release.tar.gz
 ```
 
 The sha256 is the first field of the `shasum` output.
@@ -97,10 +104,8 @@ The sha256 is the first field of the `shasum` output.
 Read `../homebrew-tap/Formula/cage.rb`.
 
 Use the Edit tool to:
-1. Replace the `url` line with:
-   `  url "https://github.com/sschlesier/cage/archive/refs/tags/v{VERSION}.tar.gz"`
-2. Replace the `sha256` line with:
-   `  sha256 "{SHA256}"`
+1. Replace the `url` line with the new version URL
+2. Replace the `sha256` line with the new checksum
 
 ## Step 10: Commit and push the homebrew tap
 

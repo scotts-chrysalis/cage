@@ -1,14 +1,5 @@
 # Changelog
 
-Before running `cage-release`, add your notes under `## Unreleased`:
-
-    ## Unreleased
-
-    - feat: description of new feature
-    - fix: description of bug fix
-
----
-
 ## v0.1.2 (2026-02-28)
 
 - feat: switch from npm to native Anthropic installer for Claude Code
