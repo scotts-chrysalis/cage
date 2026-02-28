@@ -14,4 +14,14 @@ if [ -d "$HOST" ]; then
   done
 fi
 
+# Ensure dangerous-mode permission prompt is skipped (required for --dangerously-skip-permissions)
+SETTINGS=~/.claude/settings.json
+[ ! -f "$SETTINGS" ] && echo '{}' > "$SETTINGS"
+node -e "
+  const fs = require('fs');
+  const s = JSON.parse(fs.readFileSync('$SETTINGS', 'utf8'));
+  s.skipDangerousModePermissionPrompt = true;
+  fs.writeFileSync('$SETTINGS', JSON.stringify(s, null, 2) + '\n');
+"
+
 exec "$@"
