@@ -29,7 +29,7 @@ container system start
 
 ## Architecture
 
-**Container naming**: `cage-{sanitized-branch-name}[-N]` — derived from git branch, with numeric suffix to avoid collisions.
+**Container naming**: `cage-{repo}-{branch}[-N]` — derived from the git repo name and branch, with numeric suffix to avoid collisions.
 
 **Directory mounting**: The current working directory mounts at `/home/claude/workspace`. For git worktrees, both the worktree directory and its common `.git` dir are mounted.
 

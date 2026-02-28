@@ -7,12 +7,16 @@
 
 set -e
 
-# Derive expected container name from git branch (or directory name)
+# Derive expected container name from repo and git branch (or directory names)
+REPO=$(basename "$(git -C "$(pwd)" rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null)
+if [ -z "$REPO" ]; then
+  REPO=$(basename "$(pwd)")
+fi
 BRANCH=$(git -C "$(pwd)" branch --show-current 2>/dev/null)
 if [ -z "$BRANCH" ]; then
   BRANCH=$(basename "$(pwd)")
 fi
-CAGE_NAME="cage-$(printf '%s' "$BRANCH" | tr '/' '-' | tr -cd 'a-zA-Z0-9-' | head -c 60)"
+CAGE_NAME="cage-$(printf '%s' "$REPO" | tr -cd 'a-zA-Z0-9-' | head -c 30)-$(printf '%s' "$BRANCH" | tr '/' '-' | tr -cd 'a-zA-Z0-9-' | head -c 30)"
 
 # List running cage-* containers
 RUNNING=$(container list 2>/dev/null | awk 'NR>1 {print $1}' | grep '^cage-' || true)
