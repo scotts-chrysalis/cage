@@ -58,7 +58,12 @@ while container list 2>/dev/null | grep -qw "$CAGE_NAME"; do
   SUFFIX=$((SUFFIX + 1))
 done
 
-exec container run -it --rm \
+TTY_FLAG="-it"
+if [ ! -t 0 ]; then
+  TTY_FLAG="-i"
+fi
+
+exec container run $TTY_FLAG --rm \
   --name "$CAGE_NAME" \
   --volume "$(pwd):/home/claude/workspace" \
   --volume "claude-creds:/home/claude/.claude" \
