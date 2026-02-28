@@ -1,12 +1,14 @@
 #!/bin/bash
 set -e
 
-# Find the Dockerfile: Homebrew installs it to share/cage/,
-# otherwise look next to this script (for dev / non-brew usage).
-if [ -f "$(brew --prefix 2>/dev/null)/share/cage/Dockerfile" ]; then
-  SCRIPT_DIR="$(brew --prefix)/share/cage"
-else
-  SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+# Find the Dockerfile.
+# Homebrew installs scripts to bin/ and data files to share/cage/ (one level up).
+# For dev installs, the Dockerfile sits alongside this script.
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+SHARE_DIR="$(dirname "$SCRIPT_DIR")/share/cage"
+
+if [ -f "$SHARE_DIR/Dockerfile" ]; then
+  SCRIPT_DIR="$SHARE_DIR"
 fi
 
 echo "Rebuilding claude-isolated with latest claude-code..."
