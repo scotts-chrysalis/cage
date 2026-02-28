@@ -24,7 +24,7 @@ LATEST_RAW=$(curl -s https://api.github.com/repos/anthropics/claude-code/release
 LATEST="${LATEST_RAW#v}"  # strip leading 'v' if present
 
 # Get installed version from existing image (empty if image doesn't exist)
-INSTALLED=$(container run --rm claude-isolated claude --version 2>/dev/null | awk '{print $NF}' || true)
+INSTALLED=$(container run --rm claude-isolated claude --version 2>/dev/null | awk '{print $1}' || true)
 
 if [ -n "$INSTALLED" ] && [ -n "$LATEST" ]; then
   echo "Installed: $INSTALLED"
