@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.2.0 (2026-02-28)
+
+- Support stdin piping — cage no longer forces a TTY when stdin is not a terminal, enabling use in pipelines
+
 ## v0.1.2 (2026-02-28)
 
 - feat: switch from npm to native Anthropic installer for Claude Code
