@@ -9,7 +9,7 @@ Before running `cage-release`, add your notes under `## Unreleased`:
 
 ---
 
-## Unreleased
+## v0.1.2 (2026-02-28)
 
 - feat: switch from npm to native Anthropic installer for Claude Code
 - feat: smart version check in cage-update — skips rebuild when already up-to-date, prompts with `[y/N]`
