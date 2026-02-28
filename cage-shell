@@ -1,0 +1,34 @@
+#!/bin/bash
+# cage-shell — exec a shell into a running cage container
+#
+# USAGE
+#   cage-shell     Shell into the cage for the current directory (auto-detected)
+#                  Falls back to fzf picker if no match or multiple cage-* containers
+
+set -e
+
+# Derive expected container name from git branch (or directory name)
+BRANCH=$(git -C "$(pwd)" branch --show-current 2>/dev/null)
+if [ -z "$BRANCH" ]; then
+  BRANCH=$(basename "$(pwd)")
+fi
+CAGE_NAME="cage-$(printf '%s' "$BRANCH" | tr '/' '-' | tr -cd 'a-zA-Z0-9-' | head -c 60)"
+
+# List running cage-* containers
+RUNNING=$(container list 2>/dev/null | awk 'NR>1 {print $1}' | grep '^cage-' || true)
+
+# Count how many match the derived name
+MATCHES=$(printf '%s\n' "$RUNNING" | grep -c "^${CAGE_NAME}$" || true)
+
+if [ "$MATCHES" -eq 1 ]; then
+  TARGET="$CAGE_NAME"
+else
+  # Fall back to fzf picker over all cage-* containers
+  if [ -z "$RUNNING" ]; then
+    echo "No running cage-* containers found." >&2
+    exit 1
+  fi
+  TARGET=$(printf '%s\n' "$RUNNING" | fzf --prompt="Select cage: ")
+fi
+
+exec container exec -it "$TARGET" /bin/bash
