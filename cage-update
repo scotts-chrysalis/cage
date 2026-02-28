@@ -11,9 +11,36 @@ if [ -f "$SHARE_DIR/Dockerfile" ]; then
   SCRIPT_DIR="$SHARE_DIR"
 fi
 
+# Parse flags
+FORCE=false
+for arg in "$@"; do
+  case "$arg" in
+    --force|-f) FORCE=true ;;
+  esac
+done
+
+# Get latest release version from GitHub API
+LATEST_RAW=$(curl -s https://api.github.com/repos/anthropics/claude-code/releases/latest 2>/dev/null | grep '"tag_name"' | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/')
+LATEST="${LATEST_RAW#v}"  # strip leading 'v' if present
+
+# Get installed version from existing image (empty if image doesn't exist)
+INSTALLED=$(container run --rm claude-isolated claude --version 2>/dev/null | awk '{print $NF}' || true)
+
+if [ -n "$INSTALLED" ] && [ -n "$LATEST" ]; then
+  echo "Installed: $INSTALLED"
+  echo "Latest:    $LATEST"
+  if [ "$INSTALLED" = "$LATEST" ] && [ "$FORCE" = false ]; then
+    printf "Already up-to-date. Rebuild anyway? [y/N] "
+    read -r answer
+    case "$answer" in
+      [yY]*) ;;
+      *) echo "Skipping rebuild."; exit 0 ;;
+    esac
+  fi
+fi
+
 echo "Rebuilding claude-isolated with latest claude-code..."
 container build \
-  --build-arg CACHE_BUST="$(date +%s)" \
   --tag claude-isolated \
   "$SCRIPT_DIR"
 

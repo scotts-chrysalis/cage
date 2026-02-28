@@ -6,16 +6,15 @@ RUN apt-get update && apt-get install -y \
     ripgrep \
     && rm -rf /var/lib/apt/lists/*
 
-# Pass --build-arg CACHE_BUST=$(date +%s) to force reinstall of claude-code
-ARG CACHE_BUST=1
-RUN npm install -g @anthropic-ai/claude-code
-
 RUN useradd -m -s /bin/bash claude
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 USER claude
+ENV PATH="/home/claude/.local/bin:${PATH}"
+RUN curl -fsSL https://claude.ai/install.sh | bash
+
 WORKDIR /home/claude/workspace
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
